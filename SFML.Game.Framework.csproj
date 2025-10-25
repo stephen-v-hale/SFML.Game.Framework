@@ -1,0 +1,19 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+    <Title>SFML Game Framework</Title>
+    <Authors>Stephen Hale</Authors>
+    <Description>SFML.Game.Framework is a feature-rich, high-performance 2D game framework built on top of SFML for C#. 
+It provides a full suite of systems including rendering, physics, input, audio, post-processing, particle effects, animation, and more. 
+Designed for both hobby and professional game developers, the framework offers a clean, modular architecture and modern development experience.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="SFML.Net" Version="2.6.1" />
+  </ItemGroup>
+
+</Project>
