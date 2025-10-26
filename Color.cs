@@ -99,6 +99,8 @@ public class Color
         return new Color( r, g, b, a );
     }
 
+
+
     /// <summary>
     /// Returns a string representation of this color.
     /// </summary>
@@ -116,10 +118,91 @@ public class Color
     /// </summary>
     public override int GetHashCode() => HashCode.Combine( R, G, B, A );
 
-    // ----------------------------------------------------------
-    // Operators
-    // ----------------------------------------------------------
 
+    #region Color Utilities
+
+    /// <summary>
+    /// Lightens the color by a fraction (0 = unchanged, 1 = white).
+    /// </summary>
+    public Color Lighten( float amount )
+    {
+        return new Color(
+            ( byte )Math.Min( 255, R + 255 * amount ),
+            ( byte )Math.Min( 255, G + 255 * amount ),
+            ( byte )Math.Min( 255, B + 255 * amount ),
+            A
+        );
+    }
+
+    /// <summary>
+    /// Darkens the color by a fraction (0 = unchanged, 1 = black).
+    /// </summary>
+    public Color Darken( float amount )
+    {
+        return new Color(
+            ( byte )Math.Max( 0, R - 255 * amount ),
+            ( byte )Math.Max( 0, G - 255 * amount ),
+            ( byte )Math.Max( 0, B - 255 * amount ),
+            A
+        );
+    }
+
+    /// <summary>
+    /// Blends this color with another color using a weight (0 = this, 1 = other).
+    /// </summary>
+    public Color Blend( Color other, float weight )
+    {
+        weight = Math.Clamp( weight, 0f, 1f );
+        float inv = 1f - weight;
+        return new Color(
+            ( byte )( R * inv + other.R * weight ),
+            ( byte )( G * inv + other.G * weight ),
+            ( byte )( B * inv + other.B * weight ),
+            ( byte )( A * inv + other.A * weight )
+        );
+    }
+
+    /// <summary>
+    /// Returns a grayscale version of the color.
+    /// </summary>
+    public Color ToGrayScale()
+    {
+        byte gray = (byte)((R * 0.299f) + (G * 0.587f) + (B * 0.114f));
+        return new Color( gray, gray, gray, A );
+    }
+
+    /// <summary>
+    /// Returns the inverted color (negative).
+    /// </summary>
+    public Color Invert()
+    {
+        return new Color( ( byte )( 255 - R ), ( byte )( 255 - G ), ( byte )( 255 - B ), A );
+    }
+
+    /// <summary>
+    /// Returns a new color with the specified alpha channel.
+    /// </summary>
+    public Color WithAlpha( byte alpha )
+    {
+        return new Color( R, G, B, alpha );
+    }
+
+    /// <summary>
+    /// Multiplies the RGB channels by a factor (for brightness adjustment).
+    /// </summary>
+    public Color Multiply( float factor )
+    {
+        return new Color(
+            ( byte )Math.Clamp( R * factor, 0, 255 ),
+            ( byte )Math.Clamp( G * factor, 0, 255 ),
+            ( byte )Math.Clamp( B * factor, 0, 255 ),
+            A
+        );
+    }
+
+    #endregion
+    
+    
     /// <summary>
     /// Adds two colors together (component-wise).
     /// </summary>
@@ -161,10 +244,6 @@ public class Color
     /// Determines whether two colors are not equal.
     /// </summary>
     public static bool operator !=( Color a, Color b ) => !a.Equals( b );
-
-    // ----------------------------------------------------------
-    // Predefined Colors (100)
-    // ----------------------------------------------------------
 
     public static readonly Color Transparent = new(0, 0, 0, 0);
     public static readonly Color Black = new(0, 0, 0);

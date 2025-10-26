@@ -63,37 +63,34 @@ public class DebugComponent : IDrawableGameComponent
     public void Initialize() { drawer = new GraphicsDrawer( Game.GraphicsDevice as GraphicsDevice); InitializeGraph( 20 );  graphSize = new Vector2( 100, 20 + FontSize ); }
     public void LoadContent() { }
 
-
     public void Update( GameTime gameTime )
     {
-        float deltaMs = gameTime.Delta * 1000f; // frame time in ms
-        frameCounter++;
-        accumulatedFrameTime += deltaMs;
-        elapsedTime += gameTime.Delta;
 
-        if ( elapsedTime >= 0.2f )
+        accumulatedFrameTime += gameTime.Delta; // in seconds
+
+        if ( elapsedTime >= 1.0f ) // once per second
         {
-            // Calculate FPS once per second
+            // Real FPS based on frames actually drawn
             currentFPS = frameCounter / elapsedTime;
             FPS = currentFPS;
 
-            // Use average frame time for this second for the graph
-            float avgFrameTime = accumulatedFrameTime / frameCounter;
-            frameTimes.Enqueue( avgFrameTime );
-            AddGraphPointWrapped( avgFrameTime );
+            // Store average frame time in ms for graph
+            float avgFrameTimeMs = (accumulatedFrameTime / frameCounter) * 1000f;
+            frameTimes.Enqueue( avgFrameTimeMs );
+            AddGraphPointWrapped( avgFrameTimeMs );
 
             if ( frameTimes.Count > MaxFrameHistory )
                 frameTimes.Dequeue();
 
-            // Reset counters for next second
+            // Reset for next second
             frameCounter = 0;
             accumulatedFrameTime = 0f;
             elapsedTime = 0f;
         }
     }
-
     public void Draw( GameTime gameTime )
     {
+
         if ( Font == null ) return;
 
         drawer.Begin( BlendState.Alpha );
@@ -143,6 +140,9 @@ public class DebugComponent : IDrawableGameComponent
         DrawGraphWrapped( graphOrigin, (5 + bgWidth)- (FontSize), FontSize, GraphColor);
 
         drawer.End();
+
+        frameCounter++;
+        elapsedTime += ( float )gameTime.Delta; // or stopwatch delta
     }
 
     /// <summary>

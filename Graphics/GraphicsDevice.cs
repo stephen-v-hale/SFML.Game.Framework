@@ -44,10 +44,19 @@ public class GraphicsDevice : IDisposable, IGraphicsDevice
             throw new ObjectDisposedException( nameof( GraphicsDevice ) );
     }
 
+    /// <summary>
+    /// Draws a <see cref="SFML.Graphics.Drawable"/>
+    /// </summary>
+    /// <param name="drawable"></param>
     public void Draw( SFML.Graphics.Drawable drawable )
     {
         Game.window.Draw( drawable );
     }
 
+    /// <summary>
+    /// Draws a <see cref="SFML.Graphics.Drawable"/> with a specific <see cref="SFML.Graphics.RenderTarget"/>
+    /// </summary>
+    /// <param name="drawable"></param>
+    /// <param name="renderState"></param>
     public void Draw( SFML.Graphics.Drawable drawable, SFML.Graphics.RenderStates renderState ) => Game.window.Draw( drawable, renderState );
 }

@@ -11,6 +11,7 @@ namespace SFML.Game.Framework;
 #nullable disable
 public class GameProperties
 {
+
     Game game;
     int preferedBackBufferWidth = 800, preferedBackBufferHeight = 600;
     bool vsyncronization = false;
@@ -80,12 +81,12 @@ public class GameProperties
     /// Gets or sets the bits per pixel.
     /// </summary>
     /// <remarks>Default is normally 32.</remarks>
-    public int BitPerPixel { get; set; } = 32;
+    public GamePropertiesContext.Bits BitPerPixel { get; set; } = GamePropertiesContext.Bits.Bit16;
 
     /// <summary>
     /// Gets the Settings for the current <see cref="Game"/>
     /// </summary>
-    public ContextSettings Settings { get; set; } = new ContextSettings();
+    public GamePropertiesContext Settings { get; set; } = GamePropertiesContext.Default;
 
 
     /// <summary>
@@ -99,6 +100,25 @@ public class GameProperties
             throw new ArgumentNullException( nameof( game ) );
 
         this.game = game;
+    }
+
+    /// <summary>
+    /// Caps the frames per second to the cap.
+    /// </summary>
+    /// <param name="cap">The cap.</param>
+    public void SetFrameCap( int cap )
+    {
+        Game.window.SetFramerateLimit( (uint)cap );
+    }
+
+    /// <summary>
+    /// Sets the icon of the window.
+    /// </summary>
+    /// <param name="size"></param>
+    /// <param name="iconData"></param>
+    public void SetIcon(Size size, byte[] iconData)
+    {
+        Game.window.SetIcon((uint)size.Width, (uint)size.Height, iconData );
     }
 
 }

@@ -11,6 +11,8 @@ using SFML.Game.Framework.Scene;
 using SFML.Graphics;
 using SFML.Window;
 
+using Thread = System.Threading.Thread;
+
 namespace SFML.Game.Framework;
 
 public abstract class Game : IGameWindow, IDisposable
@@ -24,7 +26,7 @@ public abstract class Game : IGameWindow, IDisposable
     /// Gets or sets weather this <see cref="Game"/> uses a fixed time step.
     /// </summary>
     /// <remarks>Usually means, the <see cref="Game"/> will always try to get your frame per second to match your refresh rate.</remarks>
-    public bool IsFixedTimeStep { get; set; } = false;
+    public bool IsFixedTimeStep { get; set; } = true;
 
     /// <summary>
     /// Gets weather this <see cref="Game"/> is disposed.
@@ -84,6 +86,8 @@ public abstract class Game : IGameWindow, IDisposable
 
         Components.Add( SceneSystem );
     }
+
+
     #endregion
 
     #region methods
@@ -121,77 +125,176 @@ public abstract class Game : IGameWindow, IDisposable
     {
         logger.Write( "Initializing", this);
 
-        // Initialize timing and window
-        window = new RenderWindow( new VideoMode( (uint)Properties.PreferedBackbufferWidth, (uint)Properties.PreferedBackBufferHeight, ( uint )Properties.BitPerPixel ), Title, Properties.Style, Properties.Settings );
-        window.Closed += ( _, __ ) => window.Close();
-        window.GainedFocus += ( _, _ ) => IsFocused = true;
-        window.LostFocus += ( _, _ ) => IsFocused = false;
-
-        window.SetVerticalSyncEnabled( Properties.VSyncronization );
-
-        Initialize();
-
-        logger.Write( "Loading content...", this );
-        LoadContent();
-
-        logger.Write( "Creating game loop...", this );
-
-        const double targetDelta = 1.0 / 60.0; // 60 FPS fixed timestep
-        double accumulatedTime = 0.0;
-        var stopwatch = Stopwatch.StartNew();
-
-        double previousTime = stopwatch.Elapsed.TotalSeconds;
-
-        // Main game loop
-        while ( window.IsOpen )
+        try
         {
-            // Process SFML events
-            window.DispatchEvents();
-
-            // Calculate elapsed time
-            double currentTime = stopwatch.Elapsed.TotalSeconds;
-            double frameTime = currentTime - previousTime;
-            previousTime = currentTime;
-
-            // Clamp large frame gaps (avoid simulation spikes)
-            if ( frameTime > 0.25 )
-                frameTime = 0.25;
-
-            // Update GameTime
-            gameTime.ElapsedGameTime = TimeSpan.FromSeconds( frameTime );
-            gameTime.TotalGameTime += gameTime.ElapsedGameTime;
-            gameTime.Delta = ( float )frameTime;
-
-            if ( IsFixedTimeStep )
+            // Initialize timing and window
+            ContextSettings settings = new ContextSettings()
             {
-                accumulatedTime += frameTime;
-
-                // Run FixedUpdate() at consistent intervals
-                while ( accumulatedTime >= targetDelta )
+                AntialiasingLevel = Properties.Settings.Antialising switch
                 {
-                    gameTime.ElapsedGameTime = TimeSpan.FromSeconds( targetDelta );
-                    gameTime.Delta = ( float )targetDelta;
-                    FixedUpdate( gameTime );
-                    accumulatedTime -= targetDelta;
+                    GamePropertiesContext.AntiAlising.X2 => 2,
+                    GamePropertiesContext.AntiAlising.X4 => 4,
+                    GamePropertiesContext.AntiAlising.X6 => 6,
+                    GamePropertiesContext.AntiAlising.X8 => 6,
+                    _ => 0
+                },
+                StencilBits = Properties.Settings.Stencil switch
+                {
+                    GamePropertiesContext.Bits.Bit8 => 8,
+                    GamePropertiesContext.Bits.Bit16 => 16,
+                    GamePropertiesContext.Bits.Bit24 => 24,
+                    GamePropertiesContext.Bits.Bit32 => 32,
+                    _ => 0,
+                },
+                DepthBits =  Properties.Settings.Depth switch
+                {
+                    GamePropertiesContext.Bits.Bit8 => 8,
+                    GamePropertiesContext.Bits.Bit16 => 16,
+                    GamePropertiesContext.Bits.Bit24 => 24,
+                    GamePropertiesContext.Bits.Bit32 => 32,
+                    _ => 0,
+                },
+                MajorVersion = Properties.Settings.MajorVersion switch
+                {
+                    GamePropertiesContext.Version.Zero => 0,
+                    GamePropertiesContext.Version.One => 1,
+                    GamePropertiesContext.Version.Two => 2,
+                    GamePropertiesContext.Version.Three => 3,
+                    GamePropertiesContext.Version.Four => 4,
+                    GamePropertiesContext.Version.Five => 5,
+                    GamePropertiesContext.Version.Six => 6,
+                    GamePropertiesContext.Version.Seven => 7,
+                    GamePropertiesContext.Version.Eight=> 8,
+                    GamePropertiesContext.Version.Nine => 9,
+                    GamePropertiesContext.Version.Ten => 10,
+                    _ => 4,
+                },
+                MinorVersion = Properties.Settings.MinorVersion switch
+                {
+                    GamePropertiesContext.Version.Zero => 0,
+                    GamePropertiesContext.Version.One => 1,
+                    GamePropertiesContext.Version.Two => 2,
+                    GamePropertiesContext.Version.Three => 3,
+                    GamePropertiesContext.Version.Four => 4,
+                    GamePropertiesContext.Version.Five => 5,
+                    GamePropertiesContext.Version.Six => 6,
+                    GamePropertiesContext.Version.Seven => 7,
+                    GamePropertiesContext.Version.Eight=> 8,
+                    GamePropertiesContext.Version.Nine => 9,
+                    GamePropertiesContext.Version.Ten => 10,
+                    _ => 4,
+                },
+                SRgbCapable = Properties.Settings.SRgbCapable,
+                AttributeFlags = Properties.Settings.AttributeFlags switch
+                {
+                    GamePropertiesContext.Attribute.Default => ContextSettings.Attribute.Default,
+                    GamePropertiesContext.Attribute.Debug => ContextSettings.Attribute.Debug,
+                    GamePropertiesContext.Attribute.Core => ContextSettings.Attribute.Core,
+                    _ => ContextSettings.Attribute.Default,
                 }
+            };
 
-                Input.InputSystem.Update();
-
-                // Once per frame
-                Update( gameTime );
-            }
-            else
+            VideoMode mode = new VideoMode( ( uint )Properties.PreferedBackbufferWidth, ( uint )Properties.PreferedBackBufferHeight, Properties.BitPerPixel switch
             {
-                Input.InputSystem.Update();
+                GamePropertiesContext.Bits.Bit16 => 16,
+                GamePropertiesContext.Bits.Bit32 => 32,
+                GamePropertiesContext.Bits.Bit24 => 24,
+                GamePropertiesContext.Bits.Bit8 => 8,
+                GamePropertiesContext.Bits.None => 0,
+                _ => 32,
+            } );
+            window = new RenderWindow( mode, Title, Properties.Style, settings );
 
-                // Variable timestep
-                Update( gameTime );
+            window.Closed += ( _, __ ) => window.Close();
+            window.GainedFocus += ( _, _ ) => IsFocused = true;
+            window.LostFocus += ( _, _ ) => IsFocused = false;
+
+            window.SetVerticalSyncEnabled( Properties.VSyncronization );
+
+            Initialize();
+
+            logger.Write( "Loading content...", this );
+            LoadContent();
+
+            logger.Write( "Creating game loop...", this );
+
+            double targetDelta = 1.0 / Math.Max(1, Win32.DisplayHelper.GetWindowRefreshRate(window));
+            double accumulatedTime = 0.0;
+            var stopwatch = Stopwatch.StartNew();
+            double previousTime = stopwatch.Elapsed.TotalSeconds;
+
+            while ( window.IsOpen )
+            {
+                // Process window events
+                window.DispatchEvents();
+
+                // Calculate elapsed time
+                double currentTime = stopwatch.Elapsed.TotalSeconds;
+                double frameTime = currentTime - previousTime;
+                previousTime = currentTime;
+
+                // Clamp large frame gaps (avoid simulation spikes)
+                if ( frameTime > 0.25 )
+                    frameTime = 0.25;
+
+                // Update GameTime
+                gameTime.UnscaledElapsedGameTime = TimeSpan.FromSeconds( frameTime );
+                gameTime.TotalUnscaledGameTime += gameTime.ElapsedGameTime;
+                gameTime.UnscaledDelta = ( float )frameTime;
+
+                if ( IsFixedTimeStep )
+                {
+                    accumulatedTime += frameTime;
+
+                    // Fixed update step (logic at 60Hz)
+                    while ( accumulatedTime >= targetDelta )
+                    {
+                        gameTime.UnscaledElapsedGameTime = TimeSpan.FromSeconds( targetDelta );
+                        gameTime.UnscaledDelta = ( float )targetDelta;
+
+                        FixedUpdate( gameTime );
+                        accumulatedTime -= targetDelta;
+                    }
+
+                    // Once per frame
+                    Input.InputSystem.Update();
+                    Update( gameTime );
+                    Draw( gameTime );
+                    window.Display();
+
+                    if ( Properties.VSyncronization )
+                    {
+                        double frameEnd = stopwatch.Elapsed.TotalSeconds;
+                        double frameDuration = frameEnd - currentTime;
+                        double sleepTime = targetDelta - frameDuration;
+
+                        if ( sleepTime > 0 )
+                        { 
+                            // Fine-tune with a short spin-wait for high-precision frame cap
+                            double targetEnd = currentTime + targetDelta;
+                            while ( stopwatch.Elapsed.TotalSeconds < targetEnd )
+                            {
+                                // Optional: yield CPU very briefly
+                                Thread.SpinWait( 10 );
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    // Variable timestep mode
+                    Input.InputSystem.Update();
+                    Update( gameTime );
+                    Draw( gameTime );
+                    window.Display();
+                }
             }
-
-            Draw( gameTime );
-            window.Display();
         }
-
+        catch (Exception ex)
+        {
+            logger.Write( "RunTime Error: " + ex.Message, EntryType.Fatel, this );
+            window.Close();
+        }
         logger.Write( "Game loop End. Disposing objects...", this );
         Dispose();
 

@@ -24,12 +24,29 @@ public class ContentManager
         this.contentPipelineReader = new ContentPipelineReader( assetPackagePath );
 
         Game.logger.Write( $"ContentManager created from assetpackage '{assetPackagePath}'", this );
-        foreach (var asset in contentPipelineReader.GetAllAssets())
-        {
-            Game.logger.Write( $"Asset '{asset.Key}' loaded with size of '{asset.Value}'", this );
-        }
-
     }
+
+    /// <summary>
+    /// Loads a <see cref="Texture2D"/> or <see cref="Font"/> from a file.
+    /// </summary>
+    /// <param name="fileName">The file path.</param>
+    /// <param name="type">The type to load.</param>
+    /// <returns></returns>
+    /// <exception cref="ArgumentNullException"></exception>
+    /// <exception cref="FileNotFoundException"></exception>
+    public object FromFile(string fileName, ContentType type)
+    {
+        if ( string.IsNullOrWhiteSpace( fileName ) ) throw new ArgumentNullException( fileName );
+        if ( !File.Exists( fileName ) ) throw new FileNotFoundException( fileName );
+
+        return type switch
+        {
+            ContentType.Texture=> new Texture2D(fileName),
+            ContentType.Font=> new Font(fileName, 10), 
+            _ => null,
+        };
+    }
+
 
     /// <summary>
     /// Gets a texture.
