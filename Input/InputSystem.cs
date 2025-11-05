@@ -8,6 +8,8 @@ namespace SFML.Game.Framework.Input;
 /// </summary>
 public static class InputSystem
 {
+    static List<InputAction> _actions = new List<InputAction>();
+
     /// <summary>
     /// The list of registered input devices.
     /// </summary>
@@ -57,6 +59,29 @@ public static class InputSystem
             return null;
 
         return _devices.OfType<T>().FirstOrDefault( d => d.Name == name );
+    }
+
+    /// <summary>
+    /// Adds a <see cref="InputAction"/> buy its <see cref="Type"/>
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="action"></param>
+    public static void AddAction<T>( T action ) where T : InputAction
+    {
+        _actions.Add( action );
+    }
+
+    /// <summary>
+    /// Gets a specific <see cref="InputAction"/> from its <see cref="Type"/>
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <returns></returns>
+    public static T GetAction<T>() where T : InputAction
+    {
+        if ( _actions.Count == 0 )
+            return null;
+
+        return _actions.OfType<T>().FirstOrDefault();
     }
 
     /// <summary>
